@@ -100,7 +100,7 @@ object List {
   }
 
   def makeList2[A](v: A, n: Int): List[A] = {
-    var a:List[A] = Nil
+    var a: List[A] = Nil
     for (_ <- 1 to n)
       a = Cons(v, a)
     a
@@ -120,7 +120,7 @@ object List {
   = Cons(1, Cons(2, Cons(3, Cons(4, foldLeft(Nil, Nil: List[Int])((x, y) => Cons(y, x)))))
   = Cons(1, Cons(2, Cons(3, Cons(4, Nil))))
    */
-  def wrongFoldLeft[A,B](as: List[A], z: B)(f: (B, A) => B): B = as match {
+  def wrongFoldLeft[A, B](as: List[A], z: B)(f: (B, A) => B): B = as match {
     case Nil => z
     case Cons(h, tail) => f(wrongFoldLeft(tail, z)(f), h)
   }
@@ -139,7 +139,7 @@ object List {
   = foldLeft(Nil, Cons(4, Cons(3, Cons(2, Cons(1, Nil)))))((x, y) => Cons(y, x))
   = Cons(4, Cons(3, Cons(2, Cons(1, Nil))))
    */
-  def foldLeft[A,B](as: List[A], z: B)(f: (B, A) => B): B = as match {
+  def foldLeft[A, B](as: List[A], z: B)(f: (B, A) => B): B = as match {
     case Nil => z
     case Cons(h, tail) => foldLeft(tail, f(z, h))(f)
   }
@@ -151,4 +151,67 @@ object List {
   def lengthByFoldLeft[A](l: List[A]) = foldLeft(l, 0)((x, _) => x + 1)
 
   def reverse[A](l: List[A]): List[A] = foldLeft(l, Nil: List[A])((x, y) => Cons(y, x))
+
+  def appendByFoldRight[A](l: List[A], v: List[A]): List[A] = foldRight(l, v)((x, v) => Cons(x, v))
+
+  def flatten[A](l: List[List[A]]): List[A] = foldRight(l, Nil: List[A])(appendByFoldRight)
+
+  def increase(l: List[Int]): List[Int] = foldRight(l, Nil: List[Int])((h, tail) => Cons(h + 1, tail))
+
+  def doublesToString(l: List[Double]): List[String] = foldRight(l, Nil: List[String])((h, tail) => Cons(h.toString, tail))
+
+  def map[A, B](as: List[A])(f: A => B): List[B] = foldRight(as, Nil: List[B])((h, t) => Cons(f(h), t))
+
+  def filter[A](as: List[A])(f: A => Boolean): List[A] = as match {
+    case Nil => Nil
+    case Cons(h, tail) =>
+      if (f(h)) Cons(h, filter(tail)(f))
+      else filter(tail)(f)
+  }
+
+  def filterByFoldRight[A](as: List[A])(f: A => Boolean): List[A] =
+    foldRight(as, Nil: List[A])((h, tail) =>
+      if (f(h)) Cons(h, filterByFoldRight(tail)(f))
+      else filterByFoldRight(tail)(f)
+    )
+
+  def flatMap[A, B](as: List[A])(f: A => List[B]): List[B] = flatten(map(as)(f))
+
+  // 이해하기 힘들다
+  def filterByFlatMap[A](as: List[A])(f: A => Boolean): List[A] = flatMap(as)(x => if (f(x)) Cons(x, Nil) else Nil)
+
+  def addZip(l: List[Int], v: List[Int]): List[Int] = l match {
+    case Nil => Nil
+    case Cons(h, tail) => v match {
+      case Nil => Nil
+      case Cons(vh, vtail) => Cons(h + vh, addZip(tail, vtail))
+    }
+  }
+
+  // 이게 최선인가?
+  def zipWith[A](l: List[A], v: List[A])(f: (A, A) => A): List[A] = l match {
+    case Nil => Nil
+    case Cons(h, tail) => v match {
+      case Nil => Nil
+      case Cons(vh, vtail) => Cons(f(h, vh), zipWith(tail, vtail)(f))
+    }
+  }
+
+  def hasSubsequence[A](sup: List[A], sub: List[A]): Boolean = {
+    def checkSequence(s1: List[A], s2: List[A]): Boolean = s1 match {
+      case Nil => true
+      case Cons(h1, tail1) => s2 match {
+        case Nil => true
+        case Cons(h2, tail2) => if (h1 == h2) checkSequence(tail1, tail2) else false
+      }
+    }
+
+    if (sub == Nil) return false
+    else if (lengthByFoldLeft(sup) < lengthByFoldLeft(sub)) return false
+
+    sup match {
+      case Nil => false
+      case Cons(_, tail) => if (checkSequence(sup, sub)) true else hasSubsequence(tail, sub)
+    }
+  }
 }

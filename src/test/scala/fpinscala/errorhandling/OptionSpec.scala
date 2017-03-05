@@ -1,6 +1,7 @@
 package fpinscala.errorhandling
 
 import fpinscala.test.UnitSpec
+import fpinscala.datastructures.List
 
 /**
   * FailFnSpec
@@ -56,5 +57,29 @@ class OptionSpec extends UnitSpec {
 
   "The variance" should "perform" in {
     assert(OptionExercise.variance(Seq(1.0, 2.0, 3.0, 4.0)) == Some(1.25))
+  }
+
+  "The some functions" should "promote any function" in {
+    val absO: Option[Double] => Option[Double] = Option.lift(math.abs)
+    assert(absO(Some(-0.1)) == Some(0.1))
+    assert(absO(None) == None)
+
+    assert(OptionExample.parseInsuranceRateQuote("10", "4") == Some(0.4))
+    assert(OptionExample.parseInsuranceRateQuote("x", "4") == None)
+  }
+
+  "The sequence function" should "perform well" in {
+    val longList: List[Option[Int]] = List(Some(1), Some(2), Some(3))
+    val wrongList: List[Option[Int]] = List(Some(1), None, Some(3))
+    assert(Option.sequence(longList) == Some(List(1, 2, 3)))
+    assert(Option.sequence(wrongList) == None)
+  }
+
+  "The parseInt function" should "perform well" in {
+    val longList = List("1", "2", "3", "4")
+    val wrongList = List("1", "2", "x", "4")
+
+    assert(OptionExample.parseInts(longList) == Some(List(1, 2, 3, 4)))
+    assert(OptionExample.parseInts(wrongList) == None)
   }
 }
