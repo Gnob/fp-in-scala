@@ -64,7 +64,7 @@ class OptionSpec extends UnitSpec {
     assert(absO(Some(-0.1)) == Some(0.1))
     assert(absO(None) == None)
 
-    assert(OptionExample.parseInsuranceRateQuote("10", "4") == Some(0.4))
+    assert(OptionExample.parseInsuranceRateQuote("10", "40") == Some(4))
     assert(OptionExample.parseInsuranceRateQuote("x", "4") == None)
   }
 
