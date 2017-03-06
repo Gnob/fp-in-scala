@@ -15,21 +15,39 @@ class StreamSpec extends UnitSpec{
     val tl = Stream(1, 2, 3)
     val x = Cons(() => { println("expensive in Cons"); 1}, () => tl)
     val sx = Stream.cons({ println("expensive in cons"); 1}, tl)
+    val n: Stream[Int] = Stream.empty
+
     x.headOption
     x.headOption
     sx.headOption
     sx.headOption
+    assert(sx.headOption_1.contains(1))
+    assert(n.headOption_1.isEmpty)
   }
 
   "toList()" should "not be lazy" in {
     val xs = Stream({ println("one"); 1 }, { println("two"); 2 }, { println("three"); 3 })
+
     assert(xs.toList.isInstanceOf[List[_]])
   }
 
   "take() and drop()" should "perform well" in {
     val xs = Stream(1,2,3,4,5,6)
+
     assert(xs.take(3).toList == Stream(1,2,3).toList)
     assert(xs.drop(3).toList == Stream(4,5,6).toList)
     assert(xs.takeWhile(x => x <= 3).toList == Stream(1,2,3).toList)
+    assert(xs.takeWhile_1(x => x <= 3).toList == Stream(1,2,3).toList)
+    assert(xs.notStackSafeExists(_ == 3))
+    assert(xs.exists(_ == 3))
+    assert(xs.forAll(_ < 7))
+    assert(!xs.forAll(_ < 2))
+  }
+
+  "foldRight" should "perform well" in {
+    val xs = Stream(1,2,3,4,5,6)
+
+    assert(xs.nonLazyFoldRight(Empty: Stream[Int])((x, y) => Cons(() => x, () => y)).toList == xs.toList)
+    assert(xs.foldRight(Empty: Stream[Int])((x, y) => Cons(() => x, () => y)).toList == xs.toList)
   }
 }

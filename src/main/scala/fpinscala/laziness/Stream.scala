@@ -33,6 +33,34 @@ sealed trait Stream[+A] {
     case Empty => Empty
     case Cons(h, t) => if (p(h())) Cons(h, () => t().takeWhile(p)) else Empty
   }
+
+  def exists(p: A => Boolean): Boolean = this match {
+    case Empty => false
+    case Cons(h, t) => p(h()) || t().exists(p)
+  }
+
+  def nonLazyFoldRight[B](x: B)(f: (A,B) => B): B = this match {
+    case Empty => x
+    case Cons(h, t) => f(h(), t().nonLazyFoldRight(x)(f))
+  }
+
+  def foldRight[B](x: => B)(f: (A, => B) => B): B = this match {
+    case Empty => x
+    case Cons(h, t) => f(h(), t().foldRight(x)(f))
+  }
+
+  def notStackSafeExists(p: A => Boolean): Boolean =
+    this.foldRight(false)((x, y) => p(x) || y)
+
+  def forAll(p: A => Boolean): Boolean =
+    this.foldRight(true)((x, y) => p(x) && y)
+
+  def takeWhile_1(p: A => Boolean): Stream[A] =
+    foldRight(Empty: Stream[A])((x,y) => if (p(x)) Stream.cons(x, y.takeWhile_1(p)) else Empty)
+
+  def headOption_1: Option[A] =
+    foldRight(None: Option[A])((x,_) => Some(x))
+
 }
 
 case object Empty extends Stream[Nothing]
