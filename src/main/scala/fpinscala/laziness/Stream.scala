@@ -49,18 +49,23 @@ sealed trait Stream[+A] {
     case Cons(h, t) => f(h(), t().foldRight(x)(f))
   }
 
-  def notStackSafeExists(p: A => Boolean): Boolean =
-    this.foldRight(false)((x, y) => p(x) || y)
+  def notStackSafeExists(p: A => Boolean): Boolean = foldRight(false)((x, y) => p(x) || y)
 
-  def forAll(p: A => Boolean): Boolean =
-    this.foldRight(true)((x, y) => p(x) && y)
+  def forAll(p: A => Boolean): Boolean = foldRight(true)((x, y) => p(x) && y)
 
-  def takeWhile_1(p: A => Boolean): Stream[A] =
-    foldRight(Empty: Stream[A])((x,y) => if (p(x)) Stream.cons(x, y.takeWhile_1(p)) else Empty)
+  def takeWhile_1(p: A => Boolean): Stream[A] = foldRight(Empty: Stream[A])((x,y) => if (p(x)) Stream.cons(x, y) else Empty)
 
-  def headOption_1: Option[A] =
-    foldRight(None: Option[A])((x,_) => Some(x))
+  def headOption_1: Option[A] = foldRight(None: Option[A])((x,_) => Some(x))
 
+  def map[B](f: A => B): Stream[B] = foldRight(Empty: Stream[B])((x,y) => Stream.cons(f(x), y))
+
+  def filter(p: A => Boolean): Stream[A] = foldRight(Empty: Stream[A])((x,y) => if (p(x)) Stream.cons(x, y) else y)
+
+  def append[AA >: A](xs: => Stream[AA]): Stream[AA] = foldRight(xs)((x,y) => Stream.cons(x, y))
+
+  def flatMap[B](p: A => Stream[B]): Stream[B] = foldRight(Empty: Stream[B])((x,y) => p(x).append(y))
+
+  def find(p: A => Boolean): Option[A] = filter(p).headOption_1
 }
 
 case object Empty extends Stream[Nothing]

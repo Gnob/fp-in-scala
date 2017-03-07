@@ -68,7 +68,7 @@ object List {
   = 1 + (2 + (3 + (4 + foldRight(Nil, 0)(_ + _))))
   = 1 + (2 + (3 + (4 + 0)))
 
-  foldRight(Cons(1, Cons(2, Cons(3, Cons(4, Nil)))), Nil: List[Int])((x, y) => Cons(y, x)
+  foldRight(Cons(1, Cons(2, Cons(3, Cons(4, Nil)))), Nil: List[Int])((x, y) => Cons(y, x))
   = Cons(1, foldRight(Cons(2, Cons(3, Cons(4, Nil))), 0)(_ + _))
   = Cons(1, Cons(2, foldRight(Cons(3, Cons(4, Nil)), 0)(_ + _)))
   = Cons(1, Cons(2, Cons(3, foldRight(Cons(4, Nil), 0)(_ + _))))
