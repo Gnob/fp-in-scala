@@ -36,14 +36,17 @@ class StreamSpec extends UnitSpec{
     val xs = Stream(1,2,3,4,5,6)
 
     assert(xs.take(3).toList == Stream(1,2,3).toList)
+    assert(xs.take_1(3).toList == Stream(1,2,3).toList)
     assert(xs.drop(3).toList == Stream(4,5,6).toList)
     assert(xs.takeWhile(x => x <= 3).toList == Stream(1,2,3).toList)
     assert(xs.takeWhile_1(x => x <= 3).toList == Stream(1,2,3).toList)
+    assert(xs.takeWhile_2(x => x <= 3).toList == Stream(1,2,3).toList)
     assert(xs.notStackSafeExists(_ == 3))
     assert(xs.exists(_ == 3))
     assert(xs.forAll(_ < 7))
     assert(!xs.forAll(_ < 2))
     assert(xs.map(_.toString).toList == Stream("1","2","3","4","5","6").toList)
+    assert(xs.map_1(_.toString).toList == Stream("1","2","3","4","5","6").toList)
     assert(xs.append(Stream(7, 8, 9)).toList == List(1,2,3,4,5,6,7,8,9))
     assert(xs.flatMap(x => Stream(x, x, x)).toList == List(1,1,1,2,2,2,3,3,3,4,4,4,5,5,5,6,6,6))
   }
@@ -80,7 +83,7 @@ class StreamSpec extends UnitSpec{
   }
 
   "The constant()" should "be infinite Stream" in {
-    lazy val ones: Stream[Int] = Stream.constant(1)
+    lazy val ones: Stream[Int] = Stream.constant_1(1)
 
     assert(ones.take(5).toList == List(1,1,1,1,1))
     assert(ones.exists(_ % 2 != 0))
@@ -91,7 +94,7 @@ class StreamSpec extends UnitSpec{
   }
 
   "The from()" should "be infinite Stream" in {
-    lazy val intSeq: Stream[Int] = Stream.from(1)
+    lazy val intSeq: Stream[Int] = Stream.from_1(1)
 
     assert(intSeq.take(5).toList == List(1,2,3,4,5))
     assert(intSeq.exists(_ % 2 == 0))
@@ -102,8 +105,19 @@ class StreamSpec extends UnitSpec{
   }
 
   "The fibs()" should "be infinite Stream" in {
-    lazy val fiboSeq: Stream[Int] = Stream.fibs()
+    lazy val fiboSeq: Stream[Int] = Stream.fibs_1()
 
     assert(fiboSeq.take(12).toList == List(0,1,1,2,3,5,8,13,21,34,55,89))
+  }
+
+  "Ths zipWith()" should "make two stream zippy" in {
+    val xs: Stream[Int] = Stream(1,2,3,4,5,6)
+    val ys: Stream[String] = Stream("boy", "girl", "man", "woman", "father", "mother")
+    val zs: Stream[String] = Stream("boy", "girl", "man", "woman", "father", "mother", "grandpa", "grandma")
+
+    assert(xs.zipWith(ys)((x,y) => x.toString + y).toList
+      == Stream("1boy", "2girl", "3man", "4woman", "5father", "6mother").toList)
+
+    println(xs.zipAll(zs).toList)
   }
 }
