@@ -78,4 +78,32 @@ class StreamSpec extends UnitSpec{
     assertThrows[StackOverflowError] { ones.takeWhile_1(_ == 1).toList }
     assert(!ones.forAll(_ != 1))
   }
+
+  "The constant()" should "be infinite Stream" in {
+    lazy val ones: Stream[Int] = Stream.constant(1)
+
+    assert(ones.take(5).toList == List(1,1,1,1,1))
+    assert(ones.exists(_ % 2 != 0))
+    assert(ones.map(_ + 1).exists(_ % 2 == 0))
+    ones.takeWhile_1(_ == 1)
+    assertThrows[StackOverflowError] { ones.takeWhile_1(_ == 1).toList }
+    assert(!ones.forAll(_ != 1))
+  }
+
+  "The from()" should "be infinite Stream" in {
+    lazy val intSeq: Stream[Int] = Stream.from(1)
+
+    assert(intSeq.take(5).toList == List(1,2,3,4,5))
+    assert(intSeq.exists(_ % 2 == 0))
+    assert(intSeq.map(_ + 1).exists(_ % 2 != 0))
+    intSeq.takeWhile_1(_ < 1000000)
+    assertThrows[StackOverflowError] { intSeq.takeWhile_1(_ >= 0).toList }
+    assert(!intSeq.forAll(_ <= 5))
+  }
+
+  "The fibs()" should "be infinite Stream" in {
+    lazy val fiboSeq: Stream[Int] = Stream.fibs()
+
+    assert(fiboSeq.take(12).toList == List(0,1,1,2,3,5,8,13,21,34,55,89))
+  }
 }
