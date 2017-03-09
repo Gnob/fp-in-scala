@@ -107,6 +107,12 @@ sealed trait Stream[+A] {
 
 //  def startWith[A](s: Stream[A]): Boolean =
 //    zipAll(s).takeWhile_2(x => x._2.isDefined).forAll(x => x._1 == x._2)
+
+  def tails: Stream[Stream[A]] =
+    Stream.unfold(this) {
+      case Empty => None
+      case s @ Cons(_, t) => Some(s, t())
+    }
 }
 
 case object Empty extends Stream[Nothing]

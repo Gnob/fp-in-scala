@@ -110,7 +110,7 @@ class StreamSpec extends UnitSpec{
     assert(fiboSeq.take(12).toList == List(0,1,1,2,3,5,8,13,21,34,55,89))
   }
 
-  "Ths zipWith()" should "make two stream zippy" in {
+  "The zipWith()" should "make two stream zippy" in {
     val xs: Stream[Int] = Stream(1,2,3,4,5,6)
     val ys: Stream[String] = Stream("boy", "girl", "man", "woman", "father", "mother")
     val zs: Stream[String] = Stream("boy", "girl", "man", "woman", "father", "mother", "grandpa", "grandma")
@@ -119,5 +119,11 @@ class StreamSpec extends UnitSpec{
       == Stream("1boy", "2girl", "3man", "4woman", "5father", "6mother").toList)
 
     println(xs.zipAll(zs).toList)
+  }
+
+  "The tails()" should "be Stream of Stream" in {
+    val xs: Stream[Int] = Stream(1,2,3,4)
+
+    assert(xs.tails.toList.map(_.toList) == List(List(1,2,3,4),List(2,3,4),List(3,4),List(4)))
   }
 }
