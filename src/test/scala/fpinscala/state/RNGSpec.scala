@@ -10,7 +10,7 @@ import org.scalatest.BeforeAndAfter
 class RNGSpec extends UnitSpec with BeforeAndAfter {
   val rng: RNG = SimpleRNG(42)
 
-  behavior of "SimpleRNG"
+  behavior of "RNG"
 
   "The SimpleRNG" should "be pure" in {
     val (n1, rng2) = rng.nextInt
@@ -50,5 +50,13 @@ class RNGSpec extends UnitSpec with BeforeAndAfter {
   }
 
   "Rand[]" should "make state transition" in {
+    println(RNG.sequence(List(RNG.unit(1), RNG.unit(2), RNG.unit(3), RNG.unit(4)))(rng))
+    println(RNG.sequenceByFoldRight(List(RNG.unit(1), RNG.unit(2), RNG.unit(3), RNG.unit(4)))(rng))
+    println(RNG.sequenceByFoldLeft(List(RNG.unit(1), RNG.unit(2), RNG.unit(3), RNG.unit(4)))(rng))
+  }
+
+  "nonNegativeLessThan()" should "perform well" in {
+    println(RNG.map(RNG.int)(x => x + 1)(rng))
+    println(RNG.mapByFlatMap(RNG.int)(x => x + 1)(rng))
   }
 }

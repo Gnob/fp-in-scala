@@ -120,8 +120,60 @@ object RNG {
     rng => { go(fs, rng) }
   }
 
-  // TODO: foldRight나 foldLeft로 구현해보기
-  def sequenceByFoldRight[A](fs: List[Rand[A]]): Rand[List[A]] = ???
+  def sequenceByFoldRight[A](fs: List[Rand[A]]): Rand[List[A]] =
+    rng => {
+      fs.foldRight((Nil: List[A], rng))((s, x) => {
+        val (h, nextRNG) = s(x._2)
+        (h :: x._1, nextRNG)
+      })
+    }
 
+  def sequenceByFoldLeft[A](fs: List[Rand[A]]): Rand[List[A]] =
+    rng => {
+      fs.foldLeft((Nil: List[A], rng))((x, s) => {
+        val (h, nextRNG) = s(x._2)
+        (x._1 :+ h, nextRNG)
+      })
+    }
 
+  def unbalancedNonNegativeLessThan(n: Int): Rand[Int] =
+    map(nonNegativeInt)(_ % n)
+
+  def recursiveNonNegativeLessThan(n: Int): Rand[Int] =
+    map(nonNegativeInt)(i => {
+      val mod = i % n
+      if (i + (n + 1) - mod >= 0) mod else recursiveNonNegativeLessThan(n)(???)._1
+    })
+
+  def forwardingNonNegativeLessThan(n: Int): Rand[Int] =
+    rng => {
+      val (i, nextRNG) = nonNegativeInt(rng)
+      val mod = i % n
+      if (i + (n + 1) - mod >= 0) (mod, nextRNG)
+      else forwardingNonNegativeLessThan(n)(nextRNG)
+    }
+
+  def flatMap[A,B](f: Rand[A])(g: A => Rand[B]): Rand[B] =
+    rng => {
+      val (a, nextRNG) = f(rng)
+      g(a)(nextRNG)
+    }
+
+  def nonNegativeLessThan(n: Int): Rand[Int] =
+    flatMap(nonNegativeInt)(i => {
+      val mod = i % n
+      if (i + (n + 1) - mod >= 0) unit(mod) else nonNegativeLessThan(n)
+    })
+
+  def mapByFlatMap[A,B](s: Rand[A])(f: A => B): Rand[B] =
+    flatMap(s)(x => unit(f(x)))
+
+  def map2ByFlatMap[A,B,C](ra: Rand[A], rb: Rand[B])(f: (A,B) => C): Rand[C] =
+    flatMap(ra)(a => flatMap(rb)(b => unit(f(a, b))))
+
+  def generalMap[S,A,B](sa: S => (A, S))(f: A => B): S => (B, S) =
+    s => {
+      val (a, ns) = sa(s)
+      (f(a), ns)
+    }
 }
