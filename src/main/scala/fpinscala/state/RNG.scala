@@ -136,6 +136,9 @@ object RNG {
       })
     }
 
+  def sequenceAnswer[A](fs: List[Rand[A]]): Rand[List[A]] =
+      fs.foldRight(unit(List[A]()))((s, x) => map2(s,x)(_ :: _))
+
   def unbalancedNonNegativeLessThan(n: Int): Rand[Int] =
     map(nonNegativeInt)(_ % n)
 
