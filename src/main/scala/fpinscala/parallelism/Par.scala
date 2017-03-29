@@ -124,4 +124,27 @@ object Par {
       val bf = pb(es)
       Map2Future(af, bf, f)
     }
+
+  def lazyUnit[A](a: => A): Par[A] = fork(unit(a))
+
+  def asyncF[A,B](f: A => B): A => Par[B] = a => lazyUnit(f(a))
+
+  def sortParByMap2(parList: Par[List[Int]]): Par[List[Int]] =
+    map2(parList, unit(()))((a, _) => a.sorted)
+
+  def map[A,B](pa: Par[A])(f: A => B): Par[B] =
+    map2(pa, unit(()))((a, _) => f(a))
+
+  def sortPar(parList: Par[List[Int]]): Par[List[Int]] =
+    map(parList)(a => a.sorted)
+
+  def badSequence[A](ps: List[Par[A]]): Par[List[A]] = es => UnitFuture(ps.foldRight(Nil: List[A])((pa, b) => pa(es).get :: b))
+
+  def simpleSequence[A](ps: List[Par[A]]): Par[List[A]] = ps.foldRight[Par[List[A]]](unit(List()))((pa, b) => map2(pa, b)(_ :: _))
+
+  def parMap[A,B](ps: List[A])(f: A => B): Par[List[B]] = {
+    val fbs: List[Par[B]] = ps.map(asyncF(f))
+    simpleSequence(fbs)
+  }
+
 }
