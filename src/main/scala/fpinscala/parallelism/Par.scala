@@ -55,10 +55,10 @@ object AbsPar {
   def lazyUnit[A](a: => A): Par[A] = fork(unit(a))
 
   // as predicate
-  def run[A](a: Par[A]): A = ???
+  def runAsPredicate[A](a: Par[A]): A = ???
 
   // run knows parallelism
-  def run[A](s: ExecutorService)(a: Par[A]): A = ???
+  def runWithParallelism[A](s: ExecutorService)(a: Par[A]): A = ???
 
   type Par[A] = ExecutorService => Future[A]
 
@@ -142,9 +142,15 @@ object Par {
 
   def simpleSequence[A](ps: List[Par[A]]): Par[List[A]] = ps.foldRight[Par[List[A]]](unit(List()))((pa, b) => map2(pa, b)(_ :: _))
 
-  def parMap[A,B](ps: List[A])(f: A => B): Par[List[B]] = {
+  def parMap[A,B](ps: List[A])(f: A => B): Par[List[B]] = fork {
     val fbs: List[Par[B]] = ps.map(asyncF(f))
     simpleSequence(fbs)
   }
 
+  def parFilterByFork[A](as: List[A])(f: A => Boolean): Par[List[A]] = fork(unit(as.filter(f)))
+
+  def parFilter[A](as: List[A])(f: A => Boolean): Par[List[A]] = {
+    val pas: List[Par[List[A]]] = as map asyncF((a: A) => if (f(a)) List(a) else List())
+    map(simpleSequence(pas))(_.flatten)
+  }
 }
