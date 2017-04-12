@@ -81,6 +81,15 @@ sealed trait Stream[+A] {
     case Empty => None
     case Cons(h, t) => if (p(h())) Some(h(), t()) else None
   }
+  // 이게 최선인가?
+  def zip[B](v: Stream[B]): Stream[(A,B)] =
+    Stream.unfold((this, v))(s => s._1 match {
+      case Empty => None
+      case Cons(h, t) => s._2 match {
+        case Empty => None
+        case Cons(vh, vt) => Some((h(), vh()), (t(), vt()))
+      }
+    })
 
   // 이게 최선인가?
   def zipWith[B,C](v: Stream[B])(f: (A,B) => C): Stream[C] =
