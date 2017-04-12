@@ -55,10 +55,10 @@ object AbsPar {
   def lazyUnit[A](a: => A): Par[A] = fork(unit(a))
 
   // as predicate
-  def run[A](a: Par[A]): A = ???
+  def runAsPredicate[A](a: Par[A]): A = ???
 
   // run knows parallelism
-  def run[A](s: ExecutorService)(a: Par[A]): A = ???
+  def runWithParallelism[A](s: ExecutorService)(a: Par[A]): A = ???
 
   type Par[A] = ExecutorService => Future[A]
 
@@ -124,4 +124,33 @@ object Par {
       val bf = pb(es)
       Map2Future(af, bf, f)
     }
+
+  def lazyUnit[A](a: => A): Par[A] = fork(unit(a))
+
+  def asyncF[A,B](f: A => B): A => Par[B] = a => lazyUnit(f(a))
+
+  def sortParByMap2(parList: Par[List[Int]]): Par[List[Int]] =
+    map2(parList, unit(()))((a, _) => a.sorted)
+
+  def map[A,B](pa: Par[A])(f: A => B): Par[B] =
+    map2(pa, unit(()))((a, _) => f(a))
+
+  def sortPar(parList: Par[List[Int]]): Par[List[Int]] =
+    map(parList)(a => a.sorted)
+
+  def badSequence[A](ps: List[Par[A]]): Par[List[A]] = es => UnitFuture(ps.foldRight(Nil: List[A])((pa, b) => pa(es).get :: b))
+
+  def simpleSequence[A](ps: List[Par[A]]): Par[List[A]] = ps.foldRight[Par[List[A]]](unit(List()))((pa, b) => map2(pa, b)(_ :: _))
+
+  def parMap[A,B](ps: List[A])(f: A => B): Par[List[B]] = fork {
+    val fbs: List[Par[B]] = ps.map(asyncF(f))
+    simpleSequence(fbs)
+  }
+
+  def parFilterByFork[A](as: List[A])(f: A => Boolean): Par[List[A]] = fork(unit(as.filter(f)))
+
+  def parFilter[A](as: List[A])(f: A => Boolean): Par[List[A]] = {
+    val pas: List[Par[List[A]]] = as map asyncF((a: A) => if (f(a)) List(a) else List())
+    map(simpleSequence(pas))(_.flatten)
+  }
 }
