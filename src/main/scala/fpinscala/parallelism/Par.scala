@@ -153,4 +153,7 @@ object Par {
     val pas: List[Par[List[A]]] = as map asyncF((a: A) => if (f(a)) List(a) else List())
     map(simpleSequence(pas))(_.flatten)
   }
+
+  def equal[A](p: Par[A], p2: Par[A]): Par[Boolean] =
+    map2(p, p2)(_ == _)
 }
