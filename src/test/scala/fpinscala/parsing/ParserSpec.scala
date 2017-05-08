@@ -7,5 +7,5 @@ import fpinscala.test.UnitSpec
   */
 class ParserSpec extends UnitSpec {
   val c: Char = 'c'
-  run(char(c))(c.toString) == Right(c)
+//  run(char(c))(c.toString) == Right(c)
 }
