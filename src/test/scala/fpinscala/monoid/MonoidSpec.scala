@@ -14,13 +14,42 @@ class MonoidSpec extends UnitSpec {
   val bOpt = Some(2)
 
   "Option Monoid" should "be" in {
-    val op: (Option[Int], Option[Int]) => Option[Int] = Monoid.optionMonoid.op
-    val zero = Monoid.optionMonoid.zero
-    assertResult(true)(op(aOpt, bOpt) == aOpt)
-    assertResult(true)(op(zero, bOpt) == bOpt)
-    assertResult(true)(op(bOpt, zero) == bOpt)
-    assertResult(true)(op(op(aOpt, zero), bOpt) == aOpt)
-    assertResult(true)(op(aOpt, op(zero, bOpt)) == aOpt)
-    assertResult(true)(op(zero, zero) == zero)
+    val expected = true
+    val optionMonoid = Monoid.optionMonoid[Int]
+
+    def firstOptionMonoid[A]: Monoid[Option[A]] = Monoid.optionMonoid[A]
+    def lastOptionMonoid[A]: Monoid[Option[A]] = Monoid.dual(firstOptionMonoid)
+
+    val op: (Option[Int], Option[Int]) => Option[Int] = optionMonoid.op
+    val zero = optionMonoid.zero
+
+    assertResult(expected)(op(aOpt, bOpt) == aOpt)
+    assertResult(expected)(op(zero, bOpt) == bOpt)
+    assertResult(expected)(op(bOpt, zero) == bOpt)
+    assertResult(expected)(op(op(aOpt, zero), bOpt) == aOpt)
+    assertResult(expected)(op(aOpt, op(zero, bOpt)) == aOpt)
+    assertResult(expected)(op(zero, zero) == zero)
+  }
+
+  "foldRight and foldLeft" should "be" in {
+    val stringMonoid = Monoid.stringMonoid
+    val words = List("Eff", "ect", "ive")
+    val expected = "Effective"
+
+    assertResult(expected)(words.foldRight(stringMonoid.zero)(stringMonoid.op))
+    assertResult(expected)(words.foldLeft(stringMonoid.zero)(stringMonoid.op))
+    assertResult(expected)(Monoid.concatenate(words, stringMonoid))
+    assertResult(expected)(Monoid.foldMap(words, stringMonoid)(identity))
+
+    assertResult(expected)(Monoid.foldRight(words)(stringMonoid.zero)(stringMonoid.op))
+    assertResult(expected)(Monoid.foldLeft(words)(stringMonoid.zero)(stringMonoid.op))
+
+    val wordSeq = IndexedSeq("Eff", "ect", "ive")
+    assertResult(expected)(Monoid.foldMapV(wordSeq, stringMonoid)(identity))
+  }
+
+  "A monoid" should "check sequence validation" in {
+    val seq = IndexedSeq(4,2,5,1,3)
+    Monoid.foldMapV(seq, Monoid.stringMonoid)
   }
 }
