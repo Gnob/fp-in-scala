@@ -1,6 +1,9 @@
 package fpinscala.monad
 
+import fpinscala.state.State
 import fpinscala.testing.Gen
+
+import scala.language.reflectiveCalls
 
 /**
   * Monad
@@ -16,7 +19,7 @@ trait Functor[F[_]] {
   def distribute[A,B](fab: F[(A, B)]): (F[A], F[B]) =
     (map(fab)(_._1), map(fab)(_._2))
 
-  def unzip[A,B] = distribute[A,B]
+//  def unzip[A,B] = distribute[A,B]
 
   def codistribute[A,B](e: Either[F[A], F[B]]): F[Either[A,B]] =
     e match {
@@ -26,7 +29,7 @@ trait Functor[F[_]] {
 }
 
 trait Monad[F[_]] extends Functor[F] {
-  def unit[A](a: A): F[A]
+  def unit[A](a: => A): F[A]
   def flatMap[A,B](fa: F[A])(f: A => F[B]): F[B]
 
   def map[A,B](fa: F[A])(f: A => B): F[B] =
@@ -41,6 +44,46 @@ trait Monad[F[_]] extends Functor[F] {
 
   def sequence[A](lma: List[F[A]]): F[List[A]] =
     traverse(lma)(identity)
+
+  def replicateM[A](n: Int, ma: F[A]): F[List[A]] =
+    sequence(List.fill(n)(ma))
+
+  def product[A,B](ma: F[A], mb: F[B]): F[(A, B)] = map2(ma, mb)((_, _))
+
+  def myFilterM[A](ms: List[A])(f: A => F[Boolean]): F[List[A]] = {
+    map(product(traverse(ms)(unit(_)), traverse(ms)(f))) {
+      x => {
+        x._1.zip(x._2).filter(_._2).unzip._1
+      }
+    }
+  }
+
+  def compose[A,B,C](f: A => F[B], g: B => F[C]): A => F[C] =
+    a => flatMap(f(a))(g)
+
+  def myFlatMap[A,B](m: F[A])(f: A => F[B]): F[B] =
+    compose(identity[F[A]], f)(m)
+
+  def _flatMap[A,B](m: F[A])(f: A => F[B]): F[B] =
+    compose((_:Unit) => m, f)(())
+
+  def filterM[A](ms: List[A])(f: A => F[Boolean]): F[List[A]] =
+    ms.foldRight(unit(List[A]()))((x,xs) =>
+      compose(f, (b: Boolean) => if (b) map2(unit(x), xs)(_ :: _) else xs)(x))
+
+  def join[A](mma: F[F[A]]): F[A] =
+    flatMap(mma)(identity)
+
+  def __flatMap[A,B](m: F[A])(f: A => F[B]): F[B] =
+    join(map(m)(f))
+
+  def __compose[A,B,C](f: A => F[B], g: B => F[C]): A => F[C] =
+    a => join(map(f(a))(g))
+}
+
+case class Id[A](value: A) {
+  def flatMap[B](f: A => Id[B]): Id[B] = f(value)
+  def map[B](f: A => B): Id[B] = Id(f(value))
 }
 
 object Monad {
@@ -49,22 +92,37 @@ object Monad {
   }
 
   val genMonad = new Monad[Gen] {
-    override def unit[A](a: A): Gen[A] = Gen.unit(a)
+    override def unit[A](a: => A): Gen[A] = Gen.unit(a)
     override def flatMap[A, B](fa: Gen[A])(f: (A) => Gen[B]): Gen[B] = fa flatMap f
   }
 
   val listMonad = new Monad[List] {
-    override def unit[A](a: A): List[A] = List(a)
+    override def unit[A](a: => A): List[A] = List(a)
     override def flatMap[A, B](fa: List[A])(f: (A) => List[B]): List[B] = fa flatMap f
   }
 
   val optionMonad = new Monad[Option] {
-    override def unit[A](a: A): Option[A] = Some(a)
+    override def unit[A](a: => A): Option[A] = Some(a)
     override def flatMap[A, B](fa: Option[A])(f: (A) => Option[B]): Option[B] = fa flatMap f
   }
 
   val streamMonad = new Monad[Stream] {
-    override def unit[A](a: A): Stream[A] = Stream(a)
+    override def unit[A](a: => A): Stream[A] = Stream(a)
     override def flatMap[A, B](fa: Stream[A])(f: (A) => Stream[B]): Stream[B] = fa flatMap f
   }
+
+  val idMonad = new Monad[Id] {
+    override def unit[A](a: => A): Id[A] = Id(a)
+    override def flatMap[A, B](fa: Id[A])(f: (A) => Id[B]): Id[B] = fa flatMap f
+  }
+
+  def stateMonad[S] = new Monad[({type f[x] = State[S,x]})#f] {
+    override def unit[A](a: => A): State[S, A] = State(s => (a, s))
+    override def flatMap[A, B](fa: State[S, A])(f: (A) => State[S, B]): State[S, B] = fa flatMap f
+  }
+}
+
+object IntStateMonad extends Monad[({type IntState[A] = State[Int,A]})#IntState] {
+  override def unit[A](a: => A): State[Int,A] = State(s => (a, s))
+  override def flatMap[A, B](fa: State[Int,A])(f: (A) => State[Int,B]): State[Int,B] = fa flatMap f
 }
