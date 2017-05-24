@@ -1,5 +1,6 @@
 package fpinscala.monad
 
+import fpinscala.applicative.Applicative
 import fpinscala.state.State
 import fpinscala.testing.Gen
 
@@ -28,27 +29,27 @@ trait Functor[F[_]] {
     }
 }
 
-trait Monad[F[_]] extends Functor[F] {
+trait Monad[F[_]] extends Functor[F] with Applicative[F]{
   def unit[A](a: => A): F[A]
   def flatMap[A,B](fa: F[A])(f: A => F[B]): F[B]
 
-  def map[A,B](fa: F[A])(f: A => B): F[B] =
+  override def map[A,B](fa: F[A])(f: A => B): F[B] =
     flatMap(fa)(a => unit(f(a)))
-  def map2[A,B,C](fa: F[A], fb: F[B])(f: (A,B) => C): F[C] =
+  override def map2[A,B,C](fa: F[A], fb: F[B])(f: (A,B) => C): F[C] =
     flatMap(fa)(a => map(fb)(b => f(a,b)))
 
-  def traverse[A,B](la: List[A])(f: A => F[B]): F[List[B]] = la match {
+  override def traverse[A,B](la: List[A])(f: A => F[B]): F[List[B]] = la match {
     case Nil => unit(Nil)
     case h :: t =>  flatMap(f(h))(b => map(traverse(t)(f))(b +: _))
   }
 
-  def sequence[A](lma: List[F[A]]): F[List[A]] =
+  override def sequence[A](lma: List[F[A]]): F[List[A]] =
     traverse(lma)(identity)
 
-  def replicateM[A](n: Int, ma: F[A]): F[List[A]] =
+  override def replicateM[A](n: Int, ma: F[A]): F[List[A]] =
     sequence(List.fill(n)(ma))
 
-  def product[A,B](ma: F[A], mb: F[B]): F[(A, B)] = map2(ma, mb)((_, _))
+  override def product[A,B](ma: F[A], mb: F[B]): F[(A, B)] = map2(ma, mb)((_, _))
 
   def myFilterM[A](ms: List[A])(f: A => F[Boolean]): F[List[A]] = {
     map(product(traverse(ms)(unit(_)), traverse(ms)(f))) {
