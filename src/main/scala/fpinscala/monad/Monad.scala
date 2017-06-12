@@ -79,6 +79,31 @@ trait Monad[F[_]] extends Functor[F] {
 
   def __compose[A,B,C](f: A => F[B], g: B => F[C]): A => F[C] =
     a => join(map(f(a))(g))
+
+  def doWhile[A](a: F[A])(cond: A => F[Boolean]): F[Unit] = for {
+    a1 <- a
+    ok <- cond(a1)
+    _ <- if (ok) doWhile(a)(cond) else unit(())
+  } yield ()
+
+  def forever[A,B](a: F[A]): F[B] = {
+    lazy val t: F[B] = forever(a)
+    flatMap(a)(_ => t)
+  }
+
+  def foldM[A,B](l: Stream[A])(z: B)(f: (B,A) => F[B]): F[B] =
+    l match {
+      case h #:: t => flatMap(f(z,h))(z2 => foldM(t)(z2)(f))
+      case _ => unit(z)
+    }
+
+  def foldM_[A,B](l: Stream[A])(z: B)(f: (B,A) => F[B]): F[B] =
+    ???
+//    skip { foldM(l)(z)(f) }
+
+  def foreachM[A](l: Stream[A])(f: A => F[Unit]): F[Unit] =
+    ???
+//    foldM_(l)(())((u,a) => skip(fa))
 }
 
 case class Id[A](value: A) {
